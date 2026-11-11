@@ -74,9 +74,9 @@ feature_names = ['Date', 'Location', 'MinTemp', 'MaxTemp', 'Rainfall', 'Evaporat
                  'WindGustSpeed', 'WindDir9am', 'WindDir3pm', 'WindSpeed9am', 'WindSpeed3pm', 'Humidity9am',
                  'Humidity3pm', 'Pressure9am', 'Pressure3pm', 'Cloud9am', 'Cloud3pm', 'Temp9am', 'Temp3pm', 'RainToday']
 MODELS = {
-    'mlp': joblib.load('Models/nnMLP_pipe_fold_1.pkl'),
-    'gb': joblib.load('Models/gb_pipe_fold_1.pkl'),
-    'rf': joblib.load('Models/rf_pipe2_fold_1.pkl'),
+    'mlp': joblib.load('models/nnMLP_pipe_fold_1.pkl'),
+    'gb': joblib.load('models/gb_pipe_fold_1.pkl'),
+    'rf': joblib.load('models/rf_pipe2_fold_1.pkl'),
 }
 THRESHOLDS = {name: 0.5 for name in MODELS}
 
@@ -119,8 +119,8 @@ class Threshold(Resource):
 
         return THRESHOLDS[name]
 
-api.add_resource(Predict, '/Models/<string:name>/predict')
-api.add_resource(Threshold, '/Models/<string:name>/threshold')
+api.add_resource(Predict, '/models/<string:name>/predict')
+api.add_resource(Threshold, '/models/<string:name>/threshold')
 
 if __name__ == '__main__':
     app.run(debug=True)

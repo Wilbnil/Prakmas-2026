@@ -1,6 +1,6 @@
 import requests as r
 
-inputs = { #We should make a form
+inputs = { #Unrealistic values
      'Date': '2026-11-11',
      'Location': 'Canberra',
      'MinTemp': 6,
@@ -24,15 +24,15 @@ inputs = { #We should make a form
      'Temp3pm': 20,
      'RainToday': 'Yes'
 }
-url = 'http://127.0.0.1:5000/Models/mlp/predict'
+url = 'http://127.0.0.1:5000/models/gb/predict'
 response = r.get(url, params=inputs)
 print(f'Response: {response} args: {response.json()})')
 
-url = 'http://127.0.0.1:5000/Models/mlp/threshold'
+url = 'http://127.0.0.1:5000/models/gb/threshold'
 print(r.get(url).json())
 print(r.put(url, json={'threshold': 0.3}).json())
 print(r.get(url).json())
 
-url = 'http://127.0.0.1:5000/Models/mlp/predict'
+url = 'http://127.0.0.1:5000/models/gb/predict'
 response = r.get(url, params=inputs)
 print(f'Response: {response} args: {response.json()})')
