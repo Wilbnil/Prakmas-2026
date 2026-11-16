@@ -1,0 +1,8 @@
+flask
+flask-restful
+flask-cors
+gunicorn
+pandas
+numpy
+joblib
+scikit-learn==1.9.1
