@@ -12,7 +12,6 @@ import __main__, encoding
 for _n in dir(encoding):
     if _n.startswith('encode_') or _n == 'cyclic_encoder':
         setattr(__main__, _n, getattr(encoding, _n))
-
 app = Flask('My Backend')
 CORS(app)
 api = Api(app)
@@ -33,29 +32,29 @@ def load_json(path, default):
     return json.load(open(path)) if os.path.isfile(path) else default
 
 DEFAULTS = load_json('results/default_thresholds.json', {})   # tuned thresholds from analysis
-THRESHOLDS = {n: float(DEFAULTS.get(n, 0.5)) for n in MODELS}
+THRESHOLDS = {threshold: float(DEFAULTS.get(threshold, 0.5)) for threshold in MODELS}
 SCORES = load_json('results/test_scores.json', None)           # fold-1 test probabilities
 IMPORTANCE = load_json('results/importance.json', {})
 
 def unknown(name):
     return {'error': f'unknown model {name}'}, 404
 
-def to_frame(data):
+def to_frame(data): #Converts user input from the form to a DataFrame
     row = {}
-    for f in FEATURES:
-        v = data.get(f)
-        if v is None or v == '':
-            row[f] = np.nan
-        elif f in CATEGORICAL:
-            row[f] = v
+    for feature in FEATURES:
+        value = data.get(feature)
+        if value is None or value == '':
+            row[feature] = np.nan
+        elif feature in CATEGORICAL:
+            row[feature] = value
         else:
-            row[f] = float(v)
+            row[feature] = float(value)
     df = pd.DataFrame([row], columns=FEATURES)
-    # Keep categorical columns as object dtype (as in training), even when blank
+    #Keep categorical columns as object dtypes
     df[list(CATEGORICAL)] = df[list(CATEGORICAL)].astype(object)
     return df
 
-def thin(xs, ys, n=200):
+def thin(xs, ys, n=200): #Function for making the graphs smaller in the frontend
     idx = np.unique(np.linspace(0, len(xs) - 1, min(n, len(xs))).astype(int))
     return [{'x': round(float(xs[i]), 4), 'y': round(float(ys[i]), 4)} for i in idx]
 
@@ -64,7 +63,7 @@ class ModelList(Resource):
         return [{'id': k, 'name': NAMES[k], 'threshold': THRESHOLDS[k],
                  'default_threshold': float(DEFAULTS.get(k, 0.5))} for k in MODELS]
 
-class Predict(Resource):
+class Predict(Resource):#Calculates the probability of rain and checks whether it's within the threshold
     def post(self, name):
         if name not in MODELS:
             return unknown(name)
@@ -79,7 +78,7 @@ class Threshold(Resource):
             return unknown(name)
         return {'threshold': THRESHOLDS[name]}
 
-    def put(self, name):
+    def put(self, name): #Allows the user to change the threshold through the frontend
         if name not in MODELS:
             return unknown(name)
         value = (request.get_json(force=True) or {}).get('threshold')
@@ -98,11 +97,11 @@ class Metrics(Resource):
             return unknown(name)
         if not SCORES:
             return {'error': 'results/test_scores.json missing - run the export code in analysis.py'}, 503
-        y = np.array(SCORES['y_true'])
-        p = np.array(SCORES['models'][name])
-        t = float(request.args.get('threshold', THRESHOLDS[name]))
-        pred = (p >= t).astype(int)
-        tn, fp, fn, tp = confusion_matrix(y, pred, labels=[0, 1]).ravel()
+        y = np.array(SCORES['y_true']) #The actual weather outcomes
+        p = np.array(SCORES['models'][name]) #The predicted probabilities of the model
+        t = float(request.args.get('threshold', THRESHOLDS[name])) #The current threshold of the model
+        prediction = (p >= t).astype(int)
+        tn, fp, fn, tp = confusion_matrix(y, prediction, labels=[0, 1]).ravel()
 
         fpr, tpr, _ = roc_curve(y, p)
         prec, rec, _ = precision_recall_curve(y, p)
@@ -116,11 +115,11 @@ class Metrics(Resource):
                           'f2': fbeta_score(y, q, beta=2, zero_division=0)})
         return {
             'threshold': t,
-            'metrics': {'accuracy': accuracy_score(y, pred),
-                        'precision': precision_score(y, pred, zero_division=0),
-                        'recall': recall_score(y, pred, zero_division=0),
-                        'f1': f1_score(y, pred, zero_division=0),
-                        'f2': fbeta_score(y, pred, beta=2, zero_division=0),
+            'metrics': {'accuracy': accuracy_score(y, prediction),
+                        'precision': precision_score(y, prediction, zero_division=0),
+                        'recall': recall_score(y, prediction, zero_division=0),
+                        'f1': f1_score(y, prediction, zero_division=0),
+                        'f2': fbeta_score(y, prediction, beta=2, zero_division=0),
                         'auc': roc_auc_score(y, p)},
             'confusion': {'tn': int(tn), 'fp': int(fp), 'fn': int(fn), 'tp': int(tp)},
             'roc': thin(fpr, tpr),
